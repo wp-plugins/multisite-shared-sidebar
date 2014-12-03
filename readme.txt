@@ -57,7 +57,8 @@ No, this can't be used.
 == Screenshots ==
 
 1. Use the "Multisite Shared Sidebar" widget
-1. Use the shorcode "[shared_sidebar blog="2" index="sidebar-2"]"
+
+2. Use the shorcode "[shared_sidebar blog="2" index="sidebar-2"]"
 
 == Changelog ==
 
