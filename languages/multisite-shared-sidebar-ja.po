@@ -1,0 +1,47 @@
+# Copyright (C) 2015 WordPress
+# This file is distributed under the same license as the WordPress package.
+msgid ""
+msgstr ""
+"Project-Id-Version: multisite-shared-sidebar\n"
+"Report-Msgid-Bugs-To: http://wppolyglots.wordpress.com\n"
+"POT-Creation-Date: 2015-01-15 13:07+0900\n"
+"PO-Revision-Date: 2015-01-15 13:07+0900\n"
+"Last-Translator: Mikio Ishitani <erdxz@yahoo.co.jp>\n"
+"Language-Team: multisite-shared-sidebar <erdxz@yahoo.co.jp>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Poedit 1.7.3\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: _e;__\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: ..\n"
+
+#: ../multisite-shared-sidebar.php:78
+msgid "The [Multisite Shared Sidebar] plugin is only for multisite use."
+msgstr "[Multisite Shared Sidebar] プラグインはマルチサイト専用です。"
+
+#: ../multisite-shared-sidebar.php:350 ../multisite-shared-sidebar.php:415
+msgid "Display selected sidebar in the widget."
+msgstr "指定サイトのサイドバーをウィジェット内へ表示します。"
+
+#: ../multisite-shared-sidebar.php:417
+msgid "Blog ID: or Blog Path:"
+msgstr "ブログID または ブログパス"
+
+#: ../multisite-shared-sidebar.php:425
+msgid "Sidebar ID:"
+msgstr "サイドバーID"
+
+#: ../multisite-shared-sidebar.php:443
+msgid "Using current sidebar defined."
+msgstr "現在のサイドバー定義を使用"
+
+#: ../multisite-shared-sidebar.php:454
+msgid "Advanced sidebar configuration."
+msgstr "高度なサイドバー設定"
+
+#~ msgid "Display designated sidebar in the widget."
+#~ msgstr "指定サイトのサイドバーをウィジェット内へ表示します。"

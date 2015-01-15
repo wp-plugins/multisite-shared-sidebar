@@ -1,15 +1,15 @@
 <?php
 /**
  * @package multisite-shared-sidebar
- * @version 1.0
+ * @version 1.1
  */
 /*
 Plugin Name: Multisite Shared Sidebar
 Plugin URI: 
 Description: This plugin allows a sidebar to be shared between blogs on a multisite.  It's very simple to use. You can also use this plugin to add sidebars that you have added to the theme yourself.  Beware, however, that after activating the plugin, you must view the dashboard of all of subdomains in the multisite before you can use the sidebar.
-Author: Mikio ISHITANI [ 2014/11/25 ]
+Author: Mikio ISHITANI [ 2015/01/15 ]
 Author URI:
-Version: 1.0
+Version: 1.1
 Licence: GPLv2 or later
 */
 
@@ -19,10 +19,20 @@ Licence: GPLv2 or later
 
 	1. 「Multisite Shared Sidebar」widgets を使って他のサイドバー内へ表示できます。
 	2.　ショートコード「 [shared_sidebar blog="xx" index="xxx"] 」を使ってテキスト領域内へ表示できます。
-	3.　テーマファイル内に 「 network_shared_sidebar( $blog, $index ) 」と PHPコードを直接記述して表示できます。
 
 そして、このプラグインは貴方がテーマに追加したサイドバーも共有することができます。
 ただし、プラグインを activate した後、使用する前に全ての参加サイトのダッシュボードを１回は表示しなければなりません。
+
+== Update: 2015/01/08 ==
+
+(1) 現在のブログサイトのサイドバー定義を使って表示できるようにしました。
+
+(2) 以下のサイドバー定義をカスタマイズできるようにしました。
+	・before_widget
+	・after_widget
+	・before_title
+	・after_title
+
 **/
 
 /**************
@@ -64,9 +74,10 @@ add_action('init','set_multisite_shared_sidebar_option', 999);
 function mss_plugin_activate()
 {
 	if( ! is_multisite()) {
-//		die("[Network Shared Sidebar] プラグインはマルチサイト限定です。");
-		die("The [Multisite Shared Sidebar] plugin is only for multisite use.");
+//		die("[Multisite Shared Sidebar] プラグインはマルチサイト限定です。");
+		die( __('The [Multisite Shared Sidebar] plugin is only for multisite use.', 'multisite-shared-sidebar') );
 	}
+	$GLOBALS['mss_current_sidebar_index'] = '';
 }
 register_activation_hook( __FILE__, 'mss_plugin_activate');
 
@@ -93,6 +104,9 @@ function mss_plugin_deactivate()
 		}
 		restore_current_blog();
 	}
+	
+	// 外部変数の破棄
+	unset( $GLOBALS['mss_current_sidebar_index'] );
 }
 register_deactivation_hook( __FILE__, 'mss_plugin_deactivate' );
 
@@ -145,9 +159,38 @@ function mss_query_blog_id( $arg = false )
  *			multisite_shared_sidebar("/path/", "sidebar-1");
  *
  */
-function multisite_shared_sidebar( $blog, $index )
+function multisite_shared_sidebar( 
+			$blog='', 
+			$index='', 
+			$sidebar_config='',  // '' or 'advanced_config'
+			$before_widget='', 
+			$after_widget='', 
+			$before_title='', 
+			$after_title='' 
+) {
+	$args = array(
+				'blog' => $blog,
+				'index' => $index,
+				'sidebar_config' => $sidebar_config,
+				'before_widget' => $before_widget,
+				'after_widget' => $after_widget,
+				'before_title' => $before_title,
+				'after_title' => $after_title,
+			);
+	
+	if( $args['sidebar_config'] != 'advanced_config' ) {  
+		$args['sidebar_config'] = '';	// "current_config" will be ignored
+	}
+
+	multisite_shared_sidebar_1_( $args );
+}
+
+
+function multisite_shared_sidebar_1_( $args )
 {
-	$blogID = mss_query_blog_id( $blog ) ;
+	global $wp_registered_sidebars, $mss_current_sidebar_index;
+
+	$blogID = mss_query_blog_id( $args['blog'] ) ;
 	
 	if( empty($blogID) ) {
 		return;
@@ -162,7 +205,7 @@ function multisite_shared_sidebar( $blog, $index )
 		// BEGIN サイドバー表示ルーチン　（ widgets.php : dynamic_sidebar() 関数をコピーし、改変した ）
 		// BEGIN sidebar display routine　(this is a modified version of widgets.php : dynamic_sidebar())
 		{
-			$index = sanitize_title( $index );
+			$index = sanitize_title( $args['index'] );
 
 			if ( empty( $my_registered_sidebars[ $index ] )
 			  || empty( $my_sidebars_widgets[ $index ] )
@@ -171,8 +214,15 @@ function multisite_shared_sidebar( $blog, $index )
 				restore_current_blog();
 				return;
 			}
-
-			$sidebar = $my_registered_sidebars[$index];
+			
+			if( $args['sidebar_config'] == 'current_config' && ! empty( $wp_registered_sidebars[ $mss_current_sidebar_index] ) ) {
+				// 現在のテーマのサイドバー定義を使用する
+				// Use of a sidebar definition of a current theme
+				$sidebar = $wp_registered_sidebars[ $mss_current_sidebar_index ];
+			}
+			else {
+				$sidebar = $my_registered_sidebars[ $index ];
+			}
 
 			foreach ( (array) $my_sidebars_widgets[$index] as $id ) {
 	
@@ -192,7 +242,26 @@ function multisite_shared_sidebar( $blog, $index )
 					elseif ( is_object($cn) )
 						$classname_ .= '_' . get_class($cn);
 				}
-				$classname_ = ltrim($classname_, '_') . ' ' . MSS_CSS_CLASS;	// added
+				$classname_ = ltrim($classname_, '_') . ' ' . MSS_CSS_CLASS;	// クラス名を追加
+
+				// サイドバーのウィジェット定義を上書きする
+				// Widget setting of sidebar is overwritten.
+				if( $args['sidebar_config'] == 'advanced_config' )
+				{
+					if( ! empty($args['before_widget']) ) {
+						$params[0]['before_widget'] = $args['before_widget'];
+					}
+					if( ! empty($args['after_widget']) ) {
+						$params[0]['after_widget'] = $args['after_widget'];
+					}
+					if( ! empty($args['before_title']) ) {
+						$params[0]['before_title'] = $args['before_title'];
+					}
+					if( ! empty($args['after_title']) ) {
+						$params[0]['after_title'] = $args['after_title'];
+					}
+				}
+				
 				$params[0]['before_widget'] = sprintf($params[0]['before_widget'], $id, $classname_);
 
 				$params = apply_filters( 'multisite_shared_sidebar_params', $params );
@@ -210,6 +279,26 @@ function multisite_shared_sidebar( $blog, $index )
 	restore_current_blog();
 }
 
+// サイドバー表示の前処理
+// ディスプレイに使用するサイドバーＩＤを外部変数へ保存する。
+// An index of the sidebar used for a display is saved to a global variable.
+function mss_dynamic_sidebar_before( $index, $has_widgets)
+{
+	if( !empty($has_widgets) ) {
+		$GLOBALS['mss_current_sidebar_index'] = $index;
+	}
+}
+add_action('dynamic_sidebar_before','mss_dynamic_sidebar_before', 10, 2 );
+
+// サイドバー表示の後処理
+function mss_dynamic_sidebar_after( $index, $has_widgets)
+{
+	if( !empty($has_widgets) ) {
+		$GLOBALS['mss_current_sidebar_index'] = '';
+	}
+}
+add_action('dynamic_sidebar_after','mss_dynamic_sidebar_after', 10, 2 );
+
 
 /**
  *	指定ブログのサイドバーをテキスト領域内へ表示するショートコードの定義
@@ -222,16 +311,24 @@ function multisite_shared_sidebar( $blog, $index )
  */
 function register_multisite_shared_sidebar_shortcode( $atts )
 {
-	extract(
-		shortcode_atts(
+	$args = shortcode_atts(
 			array(
 				'blog' => get_current_blog_id(),
 				'index' => '',
+				'sidebar_config' => '',  // '' or 'advanced_config'
+				'before_widget' => '',
+				'after_widget'  => '',
+				'before_title'  => '',
+				'after_title'   => '',
 			),
 			$atts
-		)
-	);
-	multisite_shared_sidebar( $blog, $index );
+		);
+
+	if( $args['sidebar_config'] != 'advanced_config' ) {
+		$args['sidebar_config'] = '';	// "current_config" will be ignored
+	}
+
+	multisite_shared_sidebar_1_( $args );
 }
 add_shortcode(
 	'shared_sidebar',	// ショートコード名 shortcode name
@@ -250,50 +347,148 @@ class Multisite_Shared_Sidebar_Widget extends WP_Widget
             'multisite_shared_sidebar_widget', // Base ID
             'Multisite Shared Sidebar', // Name
 //          array( 'description' => '指定サイトのサイドバーをウィジェット内へ表示します。', )
-			array( 'description' => 'Display designated sidebar in the widget.', )
+			array( 'description' => __('Display selected sidebar in the widget.','multisite-shared-sidebar'), )
 		);
 	}
 
 	public function widget( $args, $instance ) 
 	{
-		$blog  = $instance['blog'];
-		$index = $instance['index'];
-		multisite_shared_sidebar( $blog, $index );
+		multisite_shared_sidebar_1_( $instance ); 
     }
 
 	public function form( $instance )
 	{
-		if ( $instance ) {
-			$blog  = $instance['blog'];
-			$index = $instance['index'];
+		$id_blog = $this->get_field_id('blog');
+		$nm_blog = $this->get_field_name('blog');
+		
+		$id_index = $this->get_field_id('index');
+		$nm_index = $this->get_field_name('index');
+		
+		$id_current_config = $this->get_field_id('current_config');
+		$id_advanced_config = $this->get_field_id('advanced_config');
+		$nm_sidebar_config = $this->get_field_name('sidebar_config');
+			
+		$id_before_widget = $this->get_field_id('before_widget');
+		$nm_before_widget = $this->get_field_name('before_widget');
+		
+		$id_after_widget = $this->get_field_id('after_widget');
+		$nm_after_widget = $this->get_field_name('after_widget');
+		
+		$id_before_title = $this->get_field_id('before_title');
+		$nm_before_title = $this->get_field_name('before_title');
+		
+		$id_after_title = $this->get_field_id('after_title');
+		$nm_after_title = $this->get_field_name('after_title');
+		
+		if ( empty($instance) )
+		{
+			$instance['blog'] = '';
+			$instance['index'] = '';
+			$instance['sidebar_config'] = 'current_config';
+			$instance['before_widget'] = '';
+			$instance['after_widget'] = '';
+			$instance['before_title'] = '';
+			$instance['after_title'] = '';
 		}
-		else {
-			$blog  = '';
-			$index = '';
+		
+		switch( $instance['sidebar_config'] )
+		{
+			case 'current_config':
+				$cc = ' checked="checked"';
+				$ac = '';
+				$hd = ' hidden="hidden"';
+				break;
+			case 'advanced_config':
+				$cc = '';
+				$ac = ' checked="checked"';
+				$hd = '';
+				break;
+			default:
+				$cc = '';
+				$ac = '';
+				$hd = ' hidden="hidden"';
+				break;
 		}
 		?>
-<!--	<p>指定サイトのサイドバーをウィジェット内へ表示します。</p>-->
-		<p>Display selected sidebar in the widget.</p>
+
+		<p>■ <b><?php _e('Display selected sidebar in the widget.','multisite-shared-sidebar'); ?></b></p>
 		<p>
-		<label for="<?php echo $this->get_field_id( 'blog' ); ?>">Blog ID: or Blog Path:</label>
+		<label for="<?php echo $id_blog; ?>"><?php _e('Blog ID: or Blog Path:','multisite-shared-sidebar'); ?></label>
 		<input  class="widefat"
-        		id="<?php echo $this->get_field_id( 'blog' ); ?>" 
-                name="<?php echo $this->get_field_name( 'blog' ); ?>" 
+        		id="<?php echo $id_blog; ?>" 
+                name="<?php echo $nm_blog; ?>" 
                 type="text" 
-                value="<?php echo esc_attr( $blog ); ?>" />
-        
-		<label for="<?php echo $this->get_field_id( 'index' ); ?>">Sidebar ID:</label>
+                placeholder="1,2,3... or /path/"
+                value="<?php echo esc_attr( $instance['blog'] ); ?>" />
+        <hr hidden="hidden" />
+		<label for="<?php echo $id_index; ?>"><?php _e('Sidebar ID:','multisite-shared-sidebar'); ?></label>
 		<input  class="widefat"
-        		id="<?php echo $this->get_field_id( 'index' ); ?>" 
-                name="<?php echo $this->get_field_name( 'index' ); ?>" 
+        		id="<?php echo $id_index; ?>" 
+                name="<?php echo $nm_index; ?>" 
                 type="text" 
-                value="<?php echo esc_attr( $index ); ?>" />
+                placeholder="sidebar-1"
+                value="<?php echo esc_attr( $instance['index'] ); ?>" />
 		</p>
+		<hr />
+		<p>
+		<input  class="widefat"
+        		<?php echo $cc; ?>
+        		id="<?php echo $id_current_config; ?>" 
+                name="<?php echo $nm_sidebar_config; ?>" 
+                type="checkbox" 
+                value="current_config" 
+                onchange='mss_check_onchange(this, "<?php echo $id_current_config; ?>", "<?php echo $id_advanced_config; ?>");'
+                />
+        <label for="<?php echo $id_current_config; ?>" ><b><?php _e('Using current sidebar defined.','multisite-shared-sidebar'); ?></b></label>
+        <p>
+   		<p>
+		<input  class="widefat"
+        		<?php echo $ac; ?>
+        		id="<?php echo $id_advanced_config; ?>" 
+                name="<?php echo $nm_sidebar_config; ?>" 
+                type="checkbox" 
+                value="advanced_config" 
+                onchange='mss_check_onchange(this, "<?php echo $id_current_config; ?>", "<?php echo $id_advanced_config; ?>");'
+                />
+        <label for="<?php echo $id_advanced_config; ?>" ><b><?php _e('Advanced sidebar configuration.','multisite-shared-sidebar'); ?></b></label>
+        </p>
+        <p <?php echo $hd; ?> id="<?php echo $id_advanced_config; ?>">
+			<label>before_widget:</label>
+			<textarea class="widefat" rows="2"
+        		id="<?php echo $id_before_widget; ?>" 
+				name="<?php echo $nm_before_widget; ?>"
+            	placeholder='<li id="%1$s" class="widget %2$s">' 
+            ><?php echo esc_attr( $instance['before_widget']); ?></textarea>
+        
+			<label>after_widget:</label>
+			<textarea class="widefat" rows="2"
+        		id="<?php echo $id_after_widget; ?>" 
+            	name="<?php echo $nm_after_widget; ?>" 
+            	placeholder='</li>'
+            ><?php echo esc_attr( $instance['after_widget']); ?></textarea>
+
+			<label>before_title:</label>
+        	<textarea class="widefat" rows="2"
+        		id="<?php echo $id_before_title; ?>" 
+            	name="<?php echo $nm_before_title; ?>" 
+            	placeholder='<h2 class="widgettitle">'
+            ><?php echo esc_attr( $instance['before_title']); ?></textarea>
+
+			<label>after_title:</label>
+			<textarea  class="widefat" rows="2"
+        		id="<?php echo $id_after_title; ?>" 
+            	name="<?php echo $nm_after_title; ?>" 
+            	placeholder='</h2>'
+            ><?php echo esc_attr( $instance['after_title']); ?></textarea>
+        </p>
 		<?php
 	}
 
 	function update($new_instance, $old_instance) 
 	{
+		if( empty($new_instance['sidebar_config']) ) {
+			$new_instance['sidebar_config'] = '';
+		}
         return $new_instance;
     }
 }
@@ -302,5 +497,34 @@ add_action( 'widgets_init',
 		register_widget( 'Multisite_Shared_Sidebar_Widget' );
 	}
 );
+
+
+function register_multisite_shared_sidebar_javascript()
+{
+?>
+<script type="text/javascript">
+	function mss_check_onchange( chk, idc, ida )
+	{
+		if( chk.checked )
+		{
+			if( chk.value == 'advanced_config' ) {
+				jQuery("input[id="+idc+"]").prop('checked', false );
+				jQuery("p[id="+ida+"]").prop('hidden', false );
+				return;
+			}
+			jQuery("input[id="+ida+"]").prop('checked', false );
+		}
+		jQuery("p[id="+ida+"]").prop('hidden', true );
+	}
+</script>
+<?php
+}
+add_action( 'admin_footer', 'register_multisite_shared_sidebar_javascript' );
+
+// 翻訳ファイルの読み込み
+function mss_load_plugin_textdomain() {
+    load_plugin_textdomain( 'multisite-shared-sidebar', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
+}
+add_action( 'plugins_loaded', 'mss_load_plugin_textdomain' );
 
 ?>
