@@ -3,7 +3,7 @@ Contributors: Mikio ISHITANI
 Donate link: 
 Tags: wordpress, multisite, network, sidebar, share, shared, sharing, plugins, widgets, plugin, widget, shortcode, shortcodes
 Requires at least: 4.0.0
-Tested up to: 4.1
+Tested up to: 4.2.2
 Stable tag: 1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -105,7 +105,8 @@ Beware, however, that after activating the plugin, you must view the dashboard o
   No, it cannot be used. It is only the multisite.
 
 = Can I use this plugin to Subdomain-multisite ? =
-  I am sorry. I do not know because I have not tested in Subdomain-multisite.
+  Yes, I think it can be used.
+  However, the site should be specified in the BlogID (1,2,3, ...).
 
 == Screenshots ==
 
@@ -117,6 +118,10 @@ Beware, however, that after activating the plugin, you must view the dashboard o
 4. Shortcode example: [shared_sidebar blog='1' index='sidebar-2' ]
 
 == Changelog ==
+
+= 1.1 =
+I tested this plugin on Wordpress Ver.4.2.2 and confirmed that I worked.  
+本プラグインを Wordpress Ver.4.2.2 上でテストし、動作する事を確認しました。
 
 = 1.1 =
 Added the following functions.  
