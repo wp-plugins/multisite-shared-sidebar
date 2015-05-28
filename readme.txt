@@ -4,7 +4,7 @@ Donate link:
 Tags: wordpress, multisite, network, sidebar, share, shared, sharing, plugins, widgets, plugin, widget, shortcode, shortcodes
 Requires at least: 4.0.0
 Tested up to: 4.2.2
-Stable tag: 1.1
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,7 +119,7 @@ Beware, however, that after activating the plugin, you must view the dashboard o
 
 == Changelog ==
 
-= 1.1 =
+= 1.1.1 =
 I tested this plugin on Wordpress Ver.4.2.2 and confirmed that I worked.  
 本プラグインを Wordpress Ver.4.2.2 上でテストし、動作する事を確認しました。
 
