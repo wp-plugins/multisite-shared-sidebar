@@ -9,7 +9,7 @@ Plugin URI:
 Description: This plugin allows a sidebar to be shared between blogs on a multisite.  It's very simple to use. You can also use this plugin to add sidebars that you have added to the theme yourself.  Beware, however, that after activating the plugin, you must view the dashboard of all of subdomains in the multisite before you can use the sidebar.
 Author: Mikio ISHITANI [ 2015/01/15 ]
 Author URI:
-Version: 1.1
+Version: 1.1.1
 Licence: GPLv2 or later
 */
 
